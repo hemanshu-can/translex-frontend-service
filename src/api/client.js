@@ -5,7 +5,7 @@ import axios from "axios";
 // different origin, so the backend must send CORS headers for the browser to
 // accept these calls — see backend/src/index.ts (app.use(cors())).
 // Override the target with VITE_API_BASE_URL if the backend moves.
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://translex-backend-service.onrender.com";
 
 const http = axios.create({ baseURL: BASE_URL });
 
