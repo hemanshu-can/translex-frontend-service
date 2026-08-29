@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(node -e \"const p=require\\(''./package.json''\\); console.log\\(Object.keys\\(p.dependencies\\).join\\(''\\\\n''\\)\\)\")",
+      "Bash(rm -f src/App.js)",
+      "Bash(npm run:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --max-time 3 http://localhost:3000/ocr)",
+      "Bash(echo \" <- backend :3000/ocr\")",
+      "Bash(netstat -ano)",
+      "WebSearch"
+    ]
+  }
+}
