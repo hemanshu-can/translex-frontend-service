@@ -1,5 +1,8 @@
-import { AppBar, Box, Chip, Divider, IconButton, Stack, Toolbar, Tooltip, Typography } from "@mui/material";
+import { useState } from "react";
+import { AppBar, Box, Button, Chip, Divider, IconButton, ListItemIcon, Menu, MenuItem, Stack, Toolbar, Tooltip, Typography } from "@mui/material";
 import HistoryRounded from "@mui/icons-material/HistoryRounded";
+import KeyboardArrowDownRounded from "@mui/icons-material/KeyboardArrowDownRounded";
+import LogoutRounded from "@mui/icons-material/LogoutRounded";
 import TuneRounded from "@mui/icons-material/TuneRounded";
 import TranslateRounded from "@mui/icons-material/TranslateRounded";
 
@@ -17,7 +20,17 @@ function StatusDot() {
   );
 }
 
-function Navbar() {
+function Navbar({ user, onLogout }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const profileOpen = Boolean(anchorEl);
+
+  const openProfile = (event) => setAnchorEl(event.currentTarget);
+  const closeProfile = () => setAnchorEl(null);
+  const handleSignOut = () => {
+    closeProfile();
+    onLogout();
+  };
+
   return (
     <AppBar
       position="sticky"
@@ -124,10 +137,10 @@ function Navbar() {
               </Typography>
             </Stack>
           </Tooltip>
-          <Divider orientation="vertical" flexItem sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
-          <Tooltip title="Recent documents">
+          <Tooltip title="Reset documents">
             <IconButton
               size="small"
+              onClick={() => window.location.reload()}
               sx={{
                 color: "rgba(255,255,255,0.55)",
                 "&:hover": { color: "#e8a33d", bgcolor: "rgba(232,163,61,0.1)" },
@@ -136,17 +149,129 @@ function Navbar() {
               <HistoryRounded fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Settings">
-            <IconButton
-              size="small"
-              sx={{
-                color: "rgba(255,255,255,0.55)",
-                "&:hover": { color: "#e8a33d", bgcolor: "rgba(232,163,61,0.1)" },
-              }}
-            >
-              <TuneRounded fontSize="small" />
-            </IconButton>
-          </Tooltip>
+
+          {/* Signed-in user: clicking the profile opens the account menu */}
+          {user && (
+            <>
+              <Divider orientation="vertical" flexItem sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
+              <Button
+                onClick={openProfile}
+                disableRipple
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+                sx={{
+                  p: 0.5,
+                  borderRadius: "10px",
+                  color: "rgba(255,255,255,0.55)",
+                  textTransform: "none",
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.06)" },
+                }}
+              >
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <Box
+                    component="img"
+                    src={user.picture}
+                    alt={user.name ?? "Google account"}
+                    referrerPolicy="no-referrer"
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                  />
+                  <Stack sx={{ display: { xs: "none", md: "flex" }, textAlign: "left" }}>
+                    <Typography
+                      sx={{
+                        fontFamily: '"Manrope", sans-serif',
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        color: "#ece8df",
+                        lineHeight: 1.15,
+                        maxWidth: 150,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {user.name ?? user.email}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontFamily: '"Space Mono", monospace',
+                        fontSize: "0.55rem",
+                        color: "rgba(255,255,255,0.4)",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      SIGNED IN
+                    </Typography>
+                  </Stack>
+                  <KeyboardArrowDownRounded
+                    sx={{ fontSize: 16, display: { xs: "none", md: "block" } }}
+                  />
+                </Stack>
+              </Button>
+
+              <Menu
+                anchorEl={anchorEl}
+                open={profileOpen}
+                onClose={closeProfile}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      mt: 1,
+                      minWidth: 190,
+                      px: 0.5,
+                      py: 0.5,
+                      bgcolor: "#0f1113",
+                      border: "1px solid rgba(255,255,255,0.09)",
+                      borderRadius: "12px",
+                      boxShadow: "0 18px 50px rgba(0,0,0,0.5)",
+                    },
+                  },
+                }}
+              >
+                <MenuItem
+                  onClick={closeProfile}
+                  sx={{
+                    borderRadius: "8px",
+                    py: 0.9,
+                    px: 1.2,
+                    fontFamily: '"Manrope", sans-serif',
+                    fontSize: "0.85rem",
+                    color: "#d8d4ca",
+                    "&:hover": { bgcolor: "rgba(232,163,61,0.08)", color: "#e8a33d" },
+                    "& .MuiListItemIcon-root": { minWidth: 30, color: "rgba(255,255,255,0.45)" },
+                  }}
+                >
+                  <ListItemIcon>
+                    <TuneRounded fontSize="small" />
+                  </ListItemIcon>
+                  Settings
+                </MenuItem>
+                <Divider sx={{ my: 0.5, borderColor: "rgba(255,255,255,0.08)" }} />
+                <MenuItem
+                  onClick={handleSignOut}
+                  sx={{
+                    borderRadius: "8px",
+                    py: 0.9,
+                    px: 1.2,
+                    fontFamily: '"Manrope", sans-serif',
+                    fontSize: "0.85rem",
+                    color: "#d8d4ca",
+                    "&:hover": { bgcolor: "rgba(255,82,66,0.12)", color: "#ff7d6b" },
+                    "& .MuiListItemIcon-root": { minWidth: 30, color: "rgba(255,255,255,0.45)" },
+                  }}
+                >
+                  <ListItemIcon>
+                    <LogoutRounded fontSize="small" />
+                  </ListItemIcon>
+                  Sign out
+                </MenuItem>
+              </Menu>
+            </>
+          )}
         </Stack>
       </Toolbar>
     </AppBar>

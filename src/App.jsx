@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Box, Stack, Typography } from "@mui/material";
 import Navbar from "./components/Navbar";
+import LoginDialog from "./components/LoginDialog";
 import Uploader from "./components/Uploader";
 import SourcePanel from "./components/SourcePanel";
 import ResultPanel from "./components/ResultPanel";
 import ConvertButton from "./components/ConvertButton";
 import { extractText } from "./api/ocr";
 import { translateToEnglish } from "./api/translate";
+import { setOnUnauthorized } from "./api/client";
 import useRequest from "./hooks/useRequest";
+import { useAuth } from "./hooks/useAuth";
 
 const STEPS = [
   { n: "01", label: "Upload" },
@@ -72,10 +75,17 @@ function StepsStrip({ activeCount }) {
 }
 
 function App() {
+  const { authed, user, error: authError, login, logout, loading } = useAuth();
   const [file, setFile] = useState(null);
   const [extracted, setExtracted] = useState("");
   const [translated, setTranslated] = useState("");
   const [errorDismissed, setErrorDismissed] = useState(false);
+
+  // A 401 from a guarded endpoint (expired/revoked token) drops the session
+  // and re-opens the login gate. `logout` is stable, so this registers once.
+  useEffect(() => {
+    setOnUnauthorized(logout);
+  }, [logout]);
 
   // One request hook per backend call — see src/api and src/hooks/useRequest.js.
   const ocr = useRequest(extractText);
@@ -124,7 +134,13 @@ function App() {
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", flexDirection: "column", bgcolor: "#0b0c0e" }}>
-      <Navbar />
+      <Navbar user={authed ? user : null} onLogout={logout} />
+
+      {/* Login gate: shown while unauthenticated; unclosable — see
+          LoginDialog.jsx. The app renders behind it, blurred. `loading`
+          suppresses it until /auth/me has answered, so a signed-in user
+          never sees a modal flash. */}
+      {!authed && !loading && <LoginDialog error={authError} onLogin={login} />}
 
       <Box
         component="main"
