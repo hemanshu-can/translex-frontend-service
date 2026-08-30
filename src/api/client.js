@@ -7,7 +7,35 @@ import axios from "axios";
 // Override the target with VITE_API_BASE_URL if the backend moves.
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "https://translex-backend-service.onrender.com";
 
-const http = axios.create({ baseURL: BASE_URL });
+// The auth JWT is an HttpOnly cookie set by the backend on the OAuth
+// callback. `withCredentials` makes the browser attach that cookie to every
+// cross-origin request (frontend :3001 -> backend :3000) — no manual auth
+// header is needed. The backend must answer with CORS credentials
+// (cors({ origin, credentials: true })), or the browser blocks these requests.
+const http = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+});
+
+// Registered by App (see App.jsx) so an expired/revoked session can drop the
+// user and re-open the login gate.
+let onUnauthorized = null;
+export function setOnUnauthorized(fn) {
+  onUnauthorized = fn;
+}
+
+// A 401 means the session is missing, expired or revoked — tell the app to
+// re-open the login gate. The error still propagates to the caller so the
+// request hook can surface it in the UI banner.
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      onUnauthorized?.();
+    }
+    return Promise.reject(err);
+  }
+);
 
 // Contract with the backend (routing-controllers): errors arrive as
 // { error: string } (or { message }), successes as plain JSON bodies.
@@ -34,4 +62,5 @@ async function api(path, { method = "GET", body, isForm = false } = {}) {
   }
 }
 
+export { BASE_URL };
 export default api;
