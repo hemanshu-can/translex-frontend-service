@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 // data / loading / error state, so components never manage fetch state.
 //
 //   const { data, loading, error, run, reset } = useRequest(extractText);
-//   run(file).then((res) => setExtracted(res.text));
+//   run(file).then((res) => setExtracted(res.pages.map((p) => p.text).join("\n\n")));
 //
 // - `run` returns the parsed response and rethrows on failure (error is
 //   also stored in `error`); callers may catch, or ignore and read `error`.

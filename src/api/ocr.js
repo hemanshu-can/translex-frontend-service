@@ -2,7 +2,7 @@ import api from "./client";
 
 // POST /api/ocr — extracts text from a PDF or image.
 // The multer field name is "file" (matches the backend's @UploadedFile("file")).
-// Returns { text }.
+// Returns { pages: [{ pageNumber, text }] }.
 export function extractText(file) {
   const form = new FormData();
   form.append("file", file);

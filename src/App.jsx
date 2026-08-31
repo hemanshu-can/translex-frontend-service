@@ -6,6 +6,7 @@ import Uploader from "./components/Uploader";
 import SourcePanel from "./components/SourcePanel";
 import ResultPanel from "./components/ResultPanel";
 import ConvertButton from "./components/ConvertButton";
+import ProofCheckCard from "./components/ProofCheckCard";
 import { extractText } from "./api/ocr";
 import { translateToEnglish } from "./api/translate";
 import { setOnUnauthorized } from "./api/client";
@@ -78,7 +79,12 @@ function App() {
   const { authed, user, error: authError, login, logout, loading } = useAuth();
   const [file, setFile] = useState(null);
   const [extracted, setExtracted] = useState("");
+  const [pages, setPages] = useState([]);
   const [translated, setTranslated] = useState("");
+  const [proofCheck, setProofCheck] = useState(null);
+  // The convert button disappears once a conversion has run, and returns
+  // when the page is reset or a new file is uploaded.
+  const [converted, setConverted] = useState(false);
   const [errorDismissed, setErrorDismissed] = useState(false);
 
   // A 401 from a guarded endpoint (expired/revoked token) drops the session
@@ -99,10 +105,17 @@ function App() {
   const handleFile = async (f) => {
     setFile(f);
     setTranslated("");
+    setProofCheck(null);
+    setConverted(false);
     setErrorDismissed(false);
     try {
       const res = await ocr.run(f);
-      setExtracted(res?.text ?? "");
+      // /ocr returns { pages: [{ pageNumber, text }] }. Keep the pages to send
+      // to /convert as-is; join them into the single extracted-text box for
+      // the editable panel.
+      const ocrPages = res?.pages ?? [];
+      setPages(ocrPages);
+      setExtracted(ocrPages.map((p) => p.text).join("\n\n"));
     } catch {
       /* failure is already recorded in ocr.error */
     }
@@ -113,8 +126,13 @@ function App() {
     if (!extracted.trim()) return;
     setErrorDismissed(false);
     try {
-      const res = await translate.run(extracted);
-      setTranslated(res?.text ?? "");
+      const res = await translate.run(pages);
+      // /convert returns { pages: [{ pageNumber, text }], proofCheck };
+      // join the pages into the single translation box and stash the
+      // proof-check verdict for the results section below it.
+      setTranslated((res?.pages ?? []).map((p) => p.text).join("\n\n"));
+      setProofCheck(res?.proofCheck ?? null);
+      setConverted(true);
     } catch {
       /* failure is already recorded in translate.error */
     }
@@ -123,7 +141,10 @@ function App() {
   const handleClearFile = () => {
     setFile(null);
     setExtracted("");
+    setPages([]);
     setTranslated("");
+    setProofCheck(null);
+    setConverted(false);
     setErrorDismissed(false);
     ocr.reset();
     translate.reset();
@@ -245,15 +266,23 @@ function App() {
             gap: { xs: 2.5, md: 3 },
           }}
         >
-          <SourcePanel value={extracted} onChange={setExtracted} loading={ocr.loading} />
+          <SourcePanel value={extracted} loading={ocr.loading} />
           <ResultPanel value={translated} loading={translate.loading} />
-          <Box sx={{ gridColumn: "1 / -1", justifySelf: "center", mt: { xs: 1, md: 2 } }}>
-            <ConvertButton
-              disabled={!extracted.trim() || ocr.loading}
-              loading={translate.loading}
-              onClick={handleConvert}
-            />
-          </Box>
+          {converted ? (
+            proofCheck && (
+              <Box sx={{ gridColumn: "1 / -1", mt: { xs: 1, md: 2 } }}>
+                <ProofCheckCard proofCheck={proofCheck} />
+              </Box>
+            )
+          ) : (
+            <Box sx={{ gridColumn: "1 / -1", justifySelf: "center", mt: { xs: 1, md: 2 } }}>
+              <ConvertButton
+                disabled={!extracted.trim() || ocr.loading}
+                loading={translate.loading}
+                onClick={handleConvert}
+              />
+            </Box>
+          )}
         </Box>
       </Box>
 
